@@ -32,43 +32,99 @@ The dataset is stored in a comma-separated-value (CSV) file and there are a tota
 The zip file was downloaded and unzipped in the current working directory. The filename is activity.csv.
 Following steps are done to read the file and to get some understanding about the data.
 
-```{r}
 
+```r
 datafile <- read.csv("activity.csv")
 nrow(datafile)
+```
+
+```
+## [1] 17568
+```
+
+```r
 str(datafile)
+```
+
+```
+## 'data.frame':	17568 obs. of  3 variables:
+##  $ steps   : int  NA NA NA NA NA NA NA NA NA NA ...
+##  $ date    : Factor w/ 61 levels "2012-10-01","2012-10-02",..: 1 1 1 1 1 1 1 1 1 1 ...
+##  $ interval: int  0 5 10 15 20 25 30 35 40 45 ...
+```
+
+```r
 head(datafile)
+```
+
+```
+##   steps       date interval
+## 1    NA 2012-10-01        0
+## 2    NA 2012-10-01        5
+## 3    NA 2012-10-01       10
+## 4    NA 2012-10-01       15
+## 5    NA 2012-10-01       20
+## 6    NA 2012-10-01       25
+```
+
+```r
 datafile$date <- as.Date(datafile$date)
 ```
 
 ##What is mean total number of steps taken per day?
 
 Create a new dataset ignoring missing data NA
-```{r}
+
+```r
 data <- na.omit(datafile)
 summary(data)
 ```
 
+```
+##      steps             date               interval     
+##  Min.   :  0.00   Min.   :2012-10-02   Min.   :   0.0  
+##  1st Qu.:  0.00   1st Qu.:2012-10-16   1st Qu.: 588.8  
+##  Median :  0.00   Median :2012-10-29   Median :1177.5  
+##  Mean   : 37.38   Mean   :2012-10-30   Mean   :1177.5  
+##  3rd Qu.: 12.00   3rd Qu.:2012-11-16   3rd Qu.:1766.2  
+##  Max.   :806.00   Max.   :2012-11-29   Max.   :2355.0
+```
+
 Plot a histogram of the total number of steps taken each day
-```{r}
+
+```r
 dailysteps <- rowsum(data$steps, format(data$date, '%Y-%m-%d'))
 dailysteps <- data.frame(dailysteps)
 names(dailysteps) <- c("steps")
 hist(dailysteps$steps, main="Total Number of Steps Taken Daily", breaks=10, xlab="Number of Steps per day")
-
 ```
 
+![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3-1.png) 
+
 Report the mean and median total number of steps taken per day
-```{r}
+
+```r
 mean(dailysteps$steps)
+```
+
+```
+## [1] 10766.19
+```
+
+```r
 median(dailysteps$steps)
+```
+
+```
+## [1] 10765
 ```
 
 ##What is the average daily activity pattern?
 
 Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
 
-```{r}
+
+```r
 library(plyr)
 library(ggplot2)
 
@@ -78,13 +134,20 @@ qplot(x=interval, y=mean, data = interval,  geom = "line",
       ylab="Number of Steps per day",
       main="Average Number of Steps Taken, Averaged Across All Days"
       )
-      
 ```
+
+![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5-1.png) 
 
 Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 
-```{r}
+
+```r
 interval[which.max(interval$mean), ]      
+```
+
+```
+##     interval     mean
+## 104      835 206.1698
 ```
 
 #Imputing missing values
@@ -97,12 +160,25 @@ The mean is used to fill in the missing values and a new data set is created.
 
 Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. 
 
-```{r}
+
+```r
 library(dplyr)
 sum(is.na(datafile$steps))
+```
 
+```
+## [1] 2304
+```
 
+```r
 filldata <- datafile %.% left_join(interval, by = "interval")
+```
+
+```
+## Warning: %.% is deprecated. Please use %>%
+```
+
+```r
 # create a new column with the mean values
 
 filldata$fillSteps <- ifelse(is.na(filldata$steps), filldata$mean, filldata$steps)
@@ -119,11 +195,25 @@ names(filldailysteps) <- c("steps")
 hist(filldailysteps$steps, main="Total Number of Steps Taken Daily", breaks=10, xlab="Number of Steps per day")
 ```
 
+![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7-1.png) 
+
 Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
-```{r}
+
+```r
 mean(filldailysteps$steps)
+```
+
+```
+## [1] 10766.19
+```
+
+```r
 median(filldailysteps$steps)
+```
+
+```
+## [1] 10766.19
 ```
 
 There is not much difference between the mean and median after filling the data and it is really close.
@@ -134,17 +224,30 @@ There is not much difference between the mean and median after filling the data 
 
 - Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). 
 
-```{r}
+
+```r
 filldata$weekdayType <- ifelse(weekdays(filldata$date) %in% c("Saturday", "Sunday"), "weekend", "weekday")
 
 fillinterval <- filldata %.% group_by(interval, weekdayType) %.% summarise(meanSteps = mean(steps, 
     na.rm = TRUE))
+```
 
+```
+## Warning: %.% is deprecated. Please use %>%
+```
+
+```
+## Warning: %.% is deprecated. Please use %>%
+```
+
+```r
 ggplot(data = fillinterval, mapping = aes(x = interval, y = meanSteps)) + 
     geom_line() + facet_grid(weekdayType ~ .) + scale_x_continuous("Day Interval", 
     breaks = seq(min(fillinterval$interval), max(fillinterval$interval), 100)) + 
     scale_y_continuous("Average Number of Steps") + ggtitle("Average Number of Steps Taken by Interval")
 ```
+
+![plot of chunk unnamed-chunk-9](figure/unnamed-chunk-9-1.png) 
 
 There is significant difference in the activity pattern between weekdays and weekends and during specific time periods.
 
